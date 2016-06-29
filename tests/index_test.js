@@ -265,6 +265,52 @@ describe('rehydrate', () => {
     });
 });
 
+describe('StyleSheet.registerSelectorHandler', () => {
+    beforeEach(() => {
+        global.document = jsdom.jsdom();
+        reset();
+    });
+
+    afterEach(() => {
+        global.document.close();
+        global.document = undefined;
+    });
+
+    it('uses new selector handlers', done => {
+        const sheet = StyleSheet.create({
+            foo: {
+                '^bar': {
+                    color: 'red',
+                },
+                color: 'blue',
+            },
+        });
+
+        StyleSheet.registerSelectorHandler(
+            (selector, baseSelector, callback) => {
+                if (selector[0] !== '^') {
+                    return null;
+                }
+                return callback(`.${selector.slice(1)} ${baseSelector}`);
+            });
+
+        css(sheet.foo);
+
+        asap(() => {
+            const styleTags = global.document.getElementsByTagName("style");
+            assert.equal(styleTags.length, 1);
+            const styles = styleTags[0].textContent;
+
+            assert.notInclude(styles, '^bar');
+            assert.include(styles, '.bar .foo');
+            assert.include(styles, 'color:red');
+            assert.include(styles, 'color:blue');
+
+            done();
+        });
+    });
+});
+
 describe('StyleSheetServer.renderStatic', () => {
     const sheet = StyleSheet.create({
         red: {

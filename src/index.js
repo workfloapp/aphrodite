@@ -2,7 +2,8 @@ import {mapObj, hashObject} from './util';
 import {
     injectAndGetClassName,
     reset, startBuffering, flushToString,
-    addRenderedClassNames, getRenderedClassNames
+    addRenderedClassNames, getRenderedClassNames,
+    addSelectorHandler,
 } from './inject';
 
 const StyleSheet = {
@@ -19,6 +20,12 @@ const StyleSheet = {
 
     rehydrate(renderedClassNames=[]) {
         addRenderedClassNames(renderedClassNames);
+    },
+
+    // Register a new selector handler. See `defaultSelectorHandlers` in
+    // generate.js
+    registerSelectorHandler(handler) {
+        addSelectorHandler(handler);
     },
 };
 

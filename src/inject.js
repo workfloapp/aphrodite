@@ -1,6 +1,6 @@
 import asap from 'asap';
 
-import {generateCSS} from './generate';
+import {generateCSS, defaultSelectorHandlers} from './generate';
 import {hashObject} from './util';
 
 // The current <style> tag we are inserting into, or null if we haven't
@@ -92,7 +92,8 @@ const stringHandlers = {
         // build the inner layers and wrap it in `@keyframes` ourselves.
         let finalVal = `@keyframes ${name}{`;
         Object.keys(val).forEach(key => {
-            finalVal += generateCSS(key, [val[key]], stringHandlers, false);
+            finalVal += generateCSS(
+                key, [val[key]], selectorHandlers, stringHandlers, false);
         });
         finalVal += '}';
 
@@ -135,10 +136,17 @@ const injectGeneratedCSSOnce = (key, generatedCSS) => {
     }
 }
 
+const selectorHandlers = defaultSelectorHandlers.slice();
+
+export const addSelectorHandler = (handler) => {
+    selectorHandlers.push(handler);
+};
+
 export const injectStyleOnce = (key, selector, definitions, useImportant) => {
     if (!alreadyInjected[key]) {
-        const generated = generateCSS(selector, definitions,
-                                      stringHandlers, useImportant);
+        const generated = generateCSS(
+            selector, definitions, selectorHandlers,
+            stringHandlers, useImportant);
 
         injectGeneratedCSSOnce(key, generated);
     }
