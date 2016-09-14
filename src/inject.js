@@ -1,6 +1,6 @@
 import asap from 'asap';
 
-import {generateCSS, defaultSelectorHandlers} from './generate';
+import {generateCSS} from './generate';
 import {hashObject} from './util';
 
 // The current <style> tag we are inserting into, or null if we haven't
@@ -46,7 +46,7 @@ const stringHandlers = {
     // them as @font-face rules that we need to inject. The value of fontFamily
     // can either be a string (as normal), an object (a single font face), or
     // an array of objects and strings.
-    fontFamily: function fontFamily(val) {
+    fontFamily: function fontFamily(val, selectorHandlers) {
         if (Array.isArray(val)) {
             return val.map(fontFamily).join(",");
         } else if (typeof val === "object") {
@@ -77,7 +77,7 @@ const stringHandlers = {
     // TODO(emily): `stringHandlers` doesn't let us rename the key, so I have
     // to use `animationName` here. Improve that so we can call this
     // `animation` instead of `animationName`.
-    animationName: (val) => {
+    animationName: (val, selectorHandlers) => {
         if (typeof val !== "object") {
             return val;
         }
@@ -136,13 +136,8 @@ const injectGeneratedCSSOnce = (key, generatedCSS) => {
     }
 }
 
-const selectorHandlers = defaultSelectorHandlers.slice();
-
-export const addSelectorHandler = (handler) => {
-    selectorHandlers.push(handler);
-};
-
-export const injectStyleOnce = (key, selector, definitions, useImportant) => {
+export const injectStyleOnce = (key, selector, definitions, useImportant,
+                                selectorHandlers) => {
     if (!alreadyInjected[key]) {
         const generated = generateCSS(
             selector, definitions, selectorHandlers,
@@ -200,7 +195,8 @@ export const addRenderedClassNames = (classNames) => {
  * @param {Object[]} styleDefinitions style definition objects as returned as
  *     properties of the return value of StyleSheet.create().
  */
-export const injectAndGetClassName = (useImportant, styleDefinitions) => {
+export const injectAndGetClassName = (useImportant, styleDefinitions,
+                                      selectorHandlers) => {
     // Filter out falsy values from the input, to allow for
     // `css(a, test && c)`
     const validDefinitions = styleDefinitions.filter((def) => def);
@@ -213,7 +209,7 @@ export const injectAndGetClassName = (useImportant, styleDefinitions) => {
     const className = validDefinitions.map(s => s._name).join("-o_O-");
     injectStyleOnce(className, `.${className}`,
         validDefinitions.map(d => d._definition),
-        useImportant);
+        useImportant, selectorHandlers);
 
     return className;
 }

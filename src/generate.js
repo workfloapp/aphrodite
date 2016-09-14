@@ -47,28 +47,28 @@ import {
  *     example above.
  * @param {string} baseSelector: The selector of the parent styles.
  *     '.foo:nth-child(2n)' in the example above.
- * @param {function} callback: A function which can be called to generate CSS
- *     for the subtree of styles corresponding to the selector. Accepts a new
- *     baseSelector to use for generating those styles.
+ * @param {function} generateSubtreeStyles: A function which can be called to
+ *     generate CSS for the subtree of styles corresponding to the selector.
+ *     Accepts a new baseSelector to use for generating those styles.
  * @returns {?string} The generated CSS for this selector, or null if we don't
  *     handle this selector.
  */
 export const defaultSelectorHandlers = [
     // Handle pseudo-selectors, like :hover and :nth-child(3n)
-    function pseudoSelectors(selector, baseSelector, callback) {
+    function pseudoSelectors(selector, baseSelector, generateSubtreeStyles) {
         if (selector[0] !== ":") {
             return null;
         }
-        return callback(baseSelector + selector);
+        return generateSubtreeStyles(baseSelector + selector);
     },
 
     // Handle media queries (or font-faces)
-    function mediaQueries(selector, baseSelector, callback) {
+    function mediaQueries(selector, baseSelector, generateSubtreeStyles) {
         if (selector[0] !== "@") {
             return null;
         }
         // Generate the styles normally, and then wrap them in the media query.
-        var generated = callback(baseSelector);
+        const generated = generateSubtreeStyles(baseSelector);
         return `${selector}{${generated}}`;
     },
 ];
@@ -122,7 +122,7 @@ export const defaultSelectorHandlers = [
  *     generateCSSRuleset(".foo:hover", { backgroundColor: "black" }, ...)
  */
 export const generateCSS = (selector, styleTypes, selectorHandlers=[],
-                            stringHandlers, useImportant) => {
+                            stringHandlers={}, useImportant=true) => {
     const merged = styleTypes.reduce(recursiveMerge);
 
     const plainDeclarations = {};
@@ -153,7 +153,8 @@ export const generateCSS = (selector, styleTypes, selectorHandlers=[],
 
     return (
         generateCSSRuleset(
-            selector, plainDeclarations, stringHandlers, useImportant) +
+            selector, plainDeclarations, stringHandlers, useImportant,
+            selectorHandlers) +
         generatedStyles
     );
 };
@@ -164,14 +165,20 @@ export const generateCSS = (selector, styleTypes, selectorHandlers=[],
  *
  * See generateCSSRuleset for usage and documentation of paramater types.
  */
-const runStringHandlers = (declarations, stringHandlers) => {
+const runStringHandlers = (declarations, stringHandlers, selectorHandlers) => {
     const result = {};
 
     Object.keys(declarations).forEach(key => {
         // If a handler exists for this particular key, let it interpret
         // that value first before continuing
         if (stringHandlers && stringHandlers.hasOwnProperty(key)) {
-            result[key] = stringHandlers[key](declarations[key]);
+            // TODO(emily): Pass in a callback which generates CSS, similar to
+            // how our selector handlers work, instead of passing in
+            // `selectorHandlers` and have them make calls to `generateCSS`
+            // themselves. Right now, this is impractical because our string
+            // handlers are very specialized and do complex things.
+            result[key] = stringHandlers[key](
+                declarations[key], selectorHandlers);
         } else {
             result[key] = declarations[key];
         }
@@ -212,9 +219,9 @@ const runStringHandlers = (declarations, stringHandlers) => {
  *    -> ".blah:hover{color: red}"
  */
 export const generateCSSRuleset = (selector, declarations, stringHandlers,
-        useImportant) => {
+                                   useImportant, selectorHandlers) => {
     const handledDeclarations = runStringHandlers(
-        declarations, stringHandlers);
+        declarations, stringHandlers, selectorHandlers);
 
     const prefixedDeclarations = prefixAll(handledDeclarations);
 

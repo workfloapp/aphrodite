@@ -265,7 +265,7 @@ describe('rehydrate', () => {
     });
 });
 
-describe('StyleSheet.registerSelectorHandler', () => {
+describe('StyleSheet.extend', () => {
     beforeEach(() => {
         global.document = jsdom.jsdom();
         reset();
@@ -276,8 +276,22 @@ describe('StyleSheet.registerSelectorHandler', () => {
         global.document = undefined;
     });
 
-    it('uses new selector handlers', done => {
-        const sheet = StyleSheet.create({
+    it('uses a new selector handler', done => {
+        const descendantHandler = (selector, baseSelector,
+                                   generateSubtreeStyles) => {
+            if (selector[0] !== '^') {
+                return null;
+            }
+            return generateSubtreeStyles(
+                `.${selector.slice(1)} ${baseSelector}`);
+        };
+
+        // Pull out the new StyleSheet/css functions to use for the rest of
+        // this test.
+        const {StyleSheet: newStyleSheet, css: newCss} =
+            StyleSheet.extend([descendantHandler]);
+
+        const sheet = newStyleSheet.create({
             foo: {
                 '^bar': {
                     color: 'red',
@@ -286,15 +300,7 @@ describe('StyleSheet.registerSelectorHandler', () => {
             },
         });
 
-        StyleSheet.registerSelectorHandler(
-            (selector, baseSelector, callback) => {
-                if (selector[0] !== '^') {
-                    return null;
-                }
-                return callback(`.${selector.slice(1)} ${baseSelector}`);
-            });
-
-        css(sheet.foo);
+        newCss(sheet.foo);
 
         asap(() => {
             const styleTags = global.document.getElementsByTagName("style");
