@@ -81,9 +81,26 @@ const makeExports = (useImportant, selectorHandlers) => {
         StyleSheet: {
             ...StyleSheet,
 
-            extend(additionalHandlers) {
+            /**
+             * Returns a version of the exports of Aphrodite (i.e. an object
+             * with `css` and `StyleSheet` properties) which have some
+             * extensions included.
+             *
+             * @param {Object} extensions: An object containing the extensions
+             *     to add to the new instance of Aphrodite.
+             * @param {Array.<SelectorHandler>} extensions.selectorHandlers:
+             *     An array of selector handler extensions to add to the new
+             *     instance of Aphrodite. See `defaultSelectorHandlers` in
+             *     generate.js.
+             *
+             * @returns {Object} An object containing the exports of the new
+             *     instance of Aphrodite.
+             */
+            extend(extensions) {
                 return makeExports(
-                    useImportant, selectorHandlers.concat(additionalHandlers));
+                    useImportant,
+                    selectorHandlers.concat(extensions.selectorHandlers || [])
+                );
             },
         },
 

@@ -276,6 +276,13 @@ describe('StyleSheet.extend', () => {
         global.document = undefined;
     });
 
+    it('accepts empty extensions', () => {
+        const newAphrodite = StyleSheet.extend({});
+
+        assert(newAphrodite.css);
+        assert(newAphrodite.StyleSheet);
+    });
+
     it('uses a new selector handler', done => {
         const descendantHandler = (selector, baseSelector,
                                    generateSubtreeStyles) => {
@@ -288,12 +295,16 @@ describe('StyleSheet.extend', () => {
 
         // Pull out the new StyleSheet/css functions to use for the rest of
         // this test.
-        const {StyleSheet: newStyleSheet, css: newCss} =
-            StyleSheet.extend([descendantHandler]);
+        const {StyleSheet: newStyleSheet, css: newCss} = StyleSheet.extend({
+            selectorHandlers: [descendantHandler],
+        });
 
         const sheet = newStyleSheet.create({
             foo: {
                 '^bar': {
+                    '^baz': {
+                        color: 'orange',
+                    },
                     color: 'red',
                 },
                 color: 'blue',
@@ -309,8 +320,10 @@ describe('StyleSheet.extend', () => {
 
             assert.notInclude(styles, '^bar');
             assert.include(styles, '.bar .foo');
+            assert.include(styles, '.baz .bar .foo');
             assert.include(styles, 'color:red');
             assert.include(styles, 'color:blue');
+            assert.include(styles, 'color:orange');
 
             done();
         });
