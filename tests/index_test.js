@@ -277,7 +277,7 @@ describe('StyleSheet.extend', () => {
     });
 
     it('accepts empty extensions', () => {
-        const newAphrodite = StyleSheet.extend({});
+        const newAphrodite = StyleSheet.extend([]);
 
         assert(newAphrodite.css);
         assert(newAphrodite.StyleSheet);
@@ -293,11 +293,14 @@ describe('StyleSheet.extend', () => {
                 `.${selector.slice(1)} ${baseSelector}`);
         };
 
+        const descendantHandlerExtension = {
+            selectorHandler: descendantHandler,
+        };
+
         // Pull out the new StyleSheet/css functions to use for the rest of
         // this test.
-        const {StyleSheet: newStyleSheet, css: newCss} = StyleSheet.extend({
-            selectorHandlers: [descendantHandler],
-        });
+        const {StyleSheet: newStyleSheet, css: newCss} = StyleSheet.extend([
+            descendantHandlerExtension]);
 
         const sheet = newStyleSheet.create({
             foo: {

@@ -86,20 +86,28 @@ const makeExports = (useImportant, selectorHandlers) => {
              * with `css` and `StyleSheet` properties) which have some
              * extensions included.
              *
-             * @param {Object} extensions: An object containing the extensions
-             *     to add to the new instance of Aphrodite.
-             * @param {Array.<SelectorHandler>} extensions.selectorHandlers:
-             *     An array of selector handler extensions to add to the new
-             *     instance of Aphrodite. See `defaultSelectorHandlers` in
+             * @param {Array.<Object>} extensions: An array of extensions to
+             *     add to this instance of Aphrodite. Each object should have a
+             *     single property on it, defining which kind of extension to
+             *     add.
+             * @param {SelectorHandler} [extensions[].selectorHandler]: A
+             *     selector handler extension. See `defaultSelectorHandlers` in
              *     generate.js.
              *
              * @returns {Object} An object containing the exports of the new
              *     instance of Aphrodite.
              */
             extend(extensions) {
+                const extensionSelectorHandlers = extensions
+                    // Pull out extensions with a selectorHandler property
+                    .map(extension => extension.selectorHandler)
+                    // Remove nulls (i.e. extensions without a selectorHandler
+                    // property).
+                    .filter(handler => handler);
+
                 return makeExports(
                     useImportant,
-                    selectorHandlers.concat(extensions.selectorHandlers || [])
+                    selectorHandlers.concat(extensionSelectorHandlers)
                 );
             },
         },

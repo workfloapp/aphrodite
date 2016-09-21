@@ -248,6 +248,55 @@ The generated css will be:
   }
 ```
 
+## Advanced: Extensions
+
+Extra features can be added to Aphrodite using extensions.
+
+To add extensions to Aphrodite, call `StyleSheet.extend` with the extensions
+you are adding. The result will be an object containing the usual exports of
+Aphrodite (`css`, `StyleSheet`, etc.) which will have your extensions included.
+For example:
+
+```js
+// my-aphrodite.js
+import {StyleSheet} from "aphrodite";
+
+export default StyleSheet.extend([extension1, extension2]);
+
+// styled.js
+import {StyleSheet, css} from "my-aphrodite.js";
+
+const styles = StyleSheet.create({
+    ...
+});
+```
+
+**Note**: Using extensions may cause Aphrodite's styles to not work properly.
+Plain Aphrodite, when used properly, ensures that the correct styles will
+always be applied to elements. Due to CSS specificity rules, extensions might
+allow you to generate styles that conflict with each other, causing incorrect
+styles to be shown.
+
+### Creating extensions
+
+Currently, there is only one kind of extension available: selector handlers.
+These kinds of extensions let you look at the selectors that someone specifies
+and generate new selectors based on them. They are used to handle pseudo-styles
+and media queries inside of Aphrodite. See the
+[`defaultSelectorHandlers` docs](src/generate.js?L8) for information about how
+to create a selector handler function.
+
+To use your extension, create an object containing a key of the kind of
+extension that you created, and pass that into `StyleSheet.extend()`:
+
+```js
+const mySelectorHandler = ...;
+
+const myExtension = { selectorHandler: mySelectorHandler };
+
+StyleSheet.extend([myExtension]);
+```
+
 # Tools
 
 - [Aphrodite output tool](https://output.jsbin.com/qoseye) - Paste what you pass to `StyleSheet.create` and see the generated CSS
