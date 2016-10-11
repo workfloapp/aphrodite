@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
 Plain Aphrodite, when used properly, ensures that the correct styles will
 always be applied to elements. Due to CSS specificity rules, extensions might
 allow you to generate styles that conflict with each other, causing incorrect
-styles to be shown.
+styles to be shown. See the global extension below to see what could go wrong.
 
 ### Creating extensions
 
@@ -292,10 +292,50 @@ extension that you created, and pass that into `StyleSheet.extend()`:
 ```js
 const mySelectorHandler = ...;
 
-const myExtension = { selectorHandler: mySelectorHandler };
+const myExtension = {selectorHandler: mySelectorHandler};
 
 StyleSheet.extend([myExtension]);
 ```
+
+As an example, you could write an extension which generates global styles like
+
+```js
+const globalSelectorHandler = (selector, _, generateSubtreeStyles) => {
+    if (selector[0] !== "*") {
+        return null;
+    }
+
+    return generateSubtreeStyles(selector.slice(1));
+};
+
+const globalExtension = {selectorHandler: globalSelectorHandler};
+```
+
+This might cause problems when two places try to generate styles for the same
+global selector however! For example, after
+
+```
+const styles = StyleSheet.create({
+    globals: {
+        '*div': {
+            color: 'red',
+        },
+    }
+});
+
+const styles2 = StyleSheet.create({
+    globals: {
+        '*div': {
+            color: 'blue',
+        },
+    },
+});
+
+css(styles.globals);
+css(styles2.globals);
+```
+
+It isn't determinate whether divs will be red or blue.
 
 # Tools
 
