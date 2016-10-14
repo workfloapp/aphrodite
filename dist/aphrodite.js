@@ -245,6 +245,16 @@ module.exports =
 	};
 
 	exports.recursiveMerge = recursiveMerge;
+	// TODO: Is recursive merge too strong here? Have to make sure it doesn't flatten.
+	// Also make sure it's merging with the right precedence.
+	var mergeAll = function mergeAll(array) {
+	    if (!Array.isArray(array)) return array;
+	    return array.reduce(function (acc, element) {
+	        return recursiveMerge(acc, element);
+	    }, {});
+	};
+
+	exports.mergeAll = mergeAll;
 	/**
 	 * CSS properties which accept numbers but are not in units of "px".
 	 * Taken from React's CSSProperty.js
@@ -551,9 +561,10 @@ module.exports =
 	        }
 
 	        injectionBuffer += generatedCSS;
+
 	        alreadyInjected[key] = {
 	            _name: key,
-	            _definition: Array.isArray(definitions) ? definitions[0] : definitions // TODO: Merge?
+	            _definition: (0, _util.mergeAll)(definitions)
 	        };
 	    }
 	};
@@ -605,6 +616,7 @@ module.exports =
 
 	exports.getRenderedClassNames = getRenderedClassNames;
 	var addRenderedClassNames = function addRenderedClassNames(classNames) {
+	    console.log('IS THIS SUPPOSED TO HAPPEN?');
 	    classNames.forEach(function (className) {
 	        alreadyInjected[className] = true;
 	    });
@@ -623,22 +635,51 @@ module.exports =
 	 */
 	var injectAndGetClassName = function injectAndGetClassName(useImportant, styleDefinitions) {
 	    styleDefinitions = (0, _util.flattenDeep)(styleDefinitions);
+	    var nonAphrodite = [];
 
 	    // Filter out falsy values from the input, to allow for
 	    // `css(a, test && c)`
-	    var validDefinitions = styleDefinitions.filter(function (def) {
-	        return def;
-	    }).map(function (def) {
-	        if (typeof def === "string" && alreadyInjected[def]) {
-	            return alreadyInjected[def];
+	    var validDefinitions = styleDefinitions.map(function (def) {
+	        // This will only apply one previously defined className and will filter
+	        // non Aphrodite classes
+	        if (typeof def === "string") {
+	            var defs = def.split(' ');
+	            var final = undefined;
+	            for (var i = 0; i < defs.length; i++) {
+	                if (alreadyInjected[defs[i]]) {
+	                    final = alreadyInjected[defs[i]];
+	                } else {
+	                    nonAphrodite.push(defs[i]);
+	                }
+	            }
+	            return final;
 	        }
 	        return def;
+	    }).filter(function (def) {
+	        return def;
 	    });
+
+	    // .reduce((acc, def) => {
+	    //   // This will only apply one previously defined className and will filter
+	    //   // non Aphrodite classes
+	    //   if (typeof def === "string") {
+	    //     let defs = def.split(' ');
+	    //     for(let i = 0; i < defs.length; i++) {
+	    //       if (alreadyInjected[defs[i]]) {
+	    //         defs[i] = alreadyInjected[defs[i]];
+	    //       }
+	    //     }
+	    //     return [...acc, ...defs];
+	    //   }
+	    //   return [...acc, def];
+	    // }, [])
 
 	    // Break if there aren't any valid styles.
 	    if (validDefinitions.length === 0) {
 	        return "";
 	    }
+
+	    var nonAphroditeString = nonAphrodite.length > 0 ? ' ' + nonAphrodite.join(' ') : '';
 
 	    var className = validDefinitions.map(function (s) {
 	        return s._name;
@@ -647,7 +688,7 @@ module.exports =
 	        return d._definition;
 	    }), useImportant);
 
-	    return className;
+	    return '' + className + nonAphroditeString;
 	};
 	exports.injectAndGetClassName = injectAndGetClassName;
 

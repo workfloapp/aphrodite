@@ -46,6 +46,13 @@ export const recursiveMerge = (a, b) => {
     return ret;
 };
 
+// TODO: Is recursive merge too strong here? Have to make sure it doesn't flatten.
+// Also make sure it's merging with the right precedence.
+export const mergeAll = (array) => {
+  if (!Array.isArray(array)) return array;
+  return array.reduce((acc, element) => recursiveMerge(acc, element), {})
+}
+
 /**
  * CSS properties which accept numbers but are not in units of "px".
  * Taken from React's CSSProperty.js

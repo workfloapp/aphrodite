@@ -1,7 +1,7 @@
 import asap from 'asap';
 
 import {generateCSS} from './generate';
-import {flattenDeep, hashObject} from './util';
+import {flattenDeep, hashObject, mergeAll} from './util';
 
 // The current <style> tag we are inserting into, or null if we haven't
 // inserted anything yet. We could find this each time using
@@ -131,9 +131,10 @@ const injectGeneratedCSSOnce = (key, generatedCSS, definitions = true) => {
         }
 
         injectionBuffer += generatedCSS;
+
         alreadyInjected[key] = {
           _name: key,
-          _definition: Array.isArray(definitions) ? definitions[0] : definitions // TODO: Merge?
+          _definition: mergeAll(definitions)
         };
     }
 }
@@ -181,6 +182,7 @@ export const getRenderedClassNames = () => {
 };
 
 export const addRenderedClassNames = (classNames) => {
+    console.log('IS THIS SUPPOSED TO HAPPEN?')
     classNames.forEach(className => {
         alreadyInjected[className] = true;
     });
@@ -198,27 +200,44 @@ export const addRenderedClassNames = (classNames) => {
  */
 export const injectAndGetClassName = (useImportant, styleDefinitions) => {
     styleDefinitions = flattenDeep(styleDefinitions);
+    let nonAphrodite = [];
 
     // Filter out falsy values from the input, to allow for
     // `css(a, test && c)`
     const validDefinitions = styleDefinitions
-      .filter((def) => def)
       .map((def) => {
-        if (typeof def === "string" && alreadyInjected[def]) {
-          return alreadyInjected[def]
+        // This will only apply one previously defined className and will filter
+        // non Aphrodite classes
+        if (typeof def === "string") {
+          const defs = def.split(' ');
+          let final;
+          for(let i = 0; i < defs.length; i++) {
+            if (alreadyInjected[defs[i]]) {
+              final = alreadyInjected[defs[i]];
+            } else {
+              nonAphrodite.push(defs[i])
+            }
+          }
+          return final;
         }
-        return def
-      });
+        return def;
+      })
+      .filter((def) => def);
 
     // Break if there aren't any valid styles.
     if (validDefinitions.length === 0) {
         return "";
     }
 
+    const nonAphroditeString = nonAphrodite.length > 0
+      ? ' ' + nonAphrodite.join(' ')
+      : '';
+
+
     const className = validDefinitions.map(s => s._name).join("-o_O-");
     injectStyleOnce(className, `.${className}`,
         validDefinitions.map(d => d._definition),
         useImportant);
 
-    return className;
+    return `${className}${nonAphroditeString}`;
 }
