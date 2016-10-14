@@ -114,7 +114,7 @@ let injectionBuffer = "";
 // already be flushed, or because we are statically buffering on the server.
 let isBuffering = false;
 
-const injectGeneratedCSSOnce = (key, generatedCSS) => {
+const injectGeneratedCSSOnce = (key, generatedCSS, definitions = true) => {
     if (!alreadyInjected[key]) {
         if (!isBuffering) {
             // We should never be automatically buffering on the server (or any
@@ -131,7 +131,10 @@ const injectGeneratedCSSOnce = (key, generatedCSS) => {
         }
 
         injectionBuffer += generatedCSS;
-        alreadyInjected[key] = true;
+        alreadyInjected[key] = {
+          _name: key,
+          _definition: Array.isArray(definitions) ? definitions[0] : definitions // TODO: Merge?
+        };
     }
 }
 
@@ -140,7 +143,7 @@ export const injectStyleOnce = (key, selector, definitions, useImportant) => {
         const generated = generateCSS(selector, definitions,
                                       stringHandlers, useImportant);
 
-        injectGeneratedCSSOnce(key, generated);
+        injectGeneratedCSSOnce(key, generated, definitions);
     }
 };
 
@@ -198,7 +201,14 @@ export const injectAndGetClassName = (useImportant, styleDefinitions) => {
 
     // Filter out falsy values from the input, to allow for
     // `css(a, test && c)`
-    const validDefinitions = styleDefinitions.filter((def) => def);
+    const validDefinitions = styleDefinitions
+      .filter((def) => def)
+      .map((def) => {
+        if (typeof def === "string" && alreadyInjected[def]) {
+          return alreadyInjected[def]
+        }
+        return def
+      });
 
     // Break if there aren't any valid styles.
     if (validDefinitions.length === 0) {
