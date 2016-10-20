@@ -1,6 +1,6 @@
 {
   "name": "@workflo/aphrodite",
-  "version": "0.7.3",
+  "version": "0.7.4",
   "description": "Inline styles in JS that just work (TM)",
   "keywords": [
     "css",

@@ -659,21 +659,6 @@ module.exports =
 	        return def;
 	    });
 
-	    // .reduce((acc, def) => {
-	    //   // This will only apply one previously defined className and will filter
-	    //   // non Aphrodite classes
-	    //   if (typeof def === "string") {
-	    //     let defs = def.split(' ');
-	    //     for(let i = 0; i < defs.length; i++) {
-	    //       if (alreadyInjected[defs[i]]) {
-	    //         defs[i] = alreadyInjected[defs[i]];
-	    //       }
-	    //     }
-	    //     return [...acc, ...defs];
-	    //   }
-	    //   return [...acc, def];
-	    // }, [])
-
 	    // Break if there aren't any valid styles.
 	    if (validDefinitions.length === 0) {
 	        return "";
@@ -683,7 +668,7 @@ module.exports =
 
 	    var className = validDefinitions.map(function (s) {
 	        return s._name;
-	    }).join("-o_O-");
+	    }).reverse().join("-o_O-");
 	    injectStyleOnce(className, '.' + className, validDefinitions.map(function (d) {
 	        return d._definition;
 	    }), useImportant);
